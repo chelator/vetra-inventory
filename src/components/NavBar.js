@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 // Top-level navigation between Inventory, Job Log, and Project Setup pages.
-function NavBar() {
+function NavBar({ activeProject }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -14,6 +14,9 @@ function NavBar() {
               🌬️
             </span>
             <span className="nav-title">Vetra Van</span>
+            {activeProject && (
+              <span className="nav-project-name">{activeProject.name}</span>
+            )}
           </div>
         </div>
 
@@ -30,13 +33,12 @@ function NavBar() {
 
         <div className="nav-links nav-links-desktop">
           <NavLink
-            to="/"
-            end
+            to="/dashboard"
             className={({ isActive }) =>
               isActive ? "nav-link nav-link-active" : "nav-link"
             }
           >
-            Inventory
+            Dashboard
           </NavLink>
           <NavLink
             to="/jobs"
@@ -45,6 +47,15 @@ function NavBar() {
             }
           >
             Job Log
+          </NavLink>
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              isActive ? "nav-link nav-link-active" : "nav-link"
+            }
+          >
+            Inventory
           </NavLink>
           <NavLink
             to="/setup"
@@ -59,14 +70,13 @@ function NavBar() {
 
       <div className={`nav-links-mobile ${isOpen ? "open" : ""}`}>
         <NavLink
-          to="/"
-          end
+          to="/dashboard"
           className={({ isActive }) =>
             isActive ? "nav-link nav-link-active" : "nav-link"
           }
           onClick={() => setIsOpen(false)}
         >
-          Inventory
+          Dashboard
         </NavLink>
         <NavLink
           to="/jobs"
@@ -76,6 +86,16 @@ function NavBar() {
           onClick={() => setIsOpen(false)}
         >
           Job Log
+        </NavLink>
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) =>
+            isActive ? "nav-link nav-link-active" : "nav-link"
+          }
+          onClick={() => setIsOpen(false)}
+        >
+          Inventory
         </NavLink>
         <NavLink
           to="/setup"

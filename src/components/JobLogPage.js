@@ -97,6 +97,7 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
   const today = new Date().toISOString().slice(0, 10);
   const formRef = useRef(null);
   const successTimerRef = useRef(null);
+  const hoursInputRefs = useRef({});
   const location = useLocation();
 
   // ── Form state ────────────────────────────────────────────────────────────
@@ -111,11 +112,17 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
   const [chipOps, setChipOps] = useState({});
   const [opNotes, setOpNotes] = useState({}); // #6 per-operation notes
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
-  const [technician, setTechnician] = useState("");
-  const [accessMethod, setAccessMethod] = useState("");
+  const [technician, setTechnician] = useState(() => {
+    try { return localStorage.getItem("vetra-last-technician") || ""; } catch { return ""; }
+  });
+  const [accessMethod, setAccessMethod] = useState(() => {
+    try { return localStorage.getItem("vetra-last-access-method") || ""; } catch { return ""; }
+  });
   const [weather, setWeather] = useState({ windSpeed: "", temp: "", condition: "" });
   const [notes, setNotes] = useState("");
   const [materialsUsed, setMaterialsUsed] = useState([]);
+  const [matSearchTerms, setMatSearchTerms] = useState({});
+  const [matDropdownOpen, setMatDropdownOpen] = useState({});
   const [editingJobId, setEditingJobId] = useState(null);
   const [formErrors, setFormErrors] = useState([]);
   const [projectSearchTerm, setProjectSearchTerm] = useState("");
@@ -203,8 +210,8 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
     setOpNotes({});
     setMaterialsUsed([]);
     setNotes("");
-    setTechnician("");
-    setAccessMethod("");
+    setTechnician(() => { try { return localStorage.getItem("vetra-last-technician") || ""; } catch { return ""; } });
+    setAccessMethod(() => { try { return localStorage.getItem("vetra-last-access-method") || ""; } catch { return ""; } });
     setWeather({ windSpeed: "", temp: "", condition: "" });
     setFormErrors([]);
     setShowOptionalDetails(false);
@@ -424,6 +431,12 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
     if (!wasEditing && submittedJobs.length > 0) {
       setUndoJob(submittedJobs);
     }
+
+    // Persist last-used technician & access method as presets
+    try {
+      if (technician.trim()) localStorage.setItem("vetra-last-technician", technician.trim());
+      if (accessMethod) localStorage.setItem("vetra-last-access-method", accessMethod);
+    } catch {}
 
     closeForm();
     const count = submittedJobs.length;
@@ -892,6 +905,19 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
                     max="24"
                     value={chipOps[opType].hours}
                     onChange={(e) => setChipHours(opType, e.target.value)}
+                    ref={(el) => {
+                      const key = opType;
+                      if (el && !el._wheelBound) {
+                        el._wheelBound = true;
+                        el.addEventListener("wheel", (ev) => {
+                          ev.preventDefault();
+                          const cur = parseFloat(el.value) || 0;
+                          const delta = ev.deltaY < 0 ? 0.5 : -0.5;
+                          const next = Math.min(24, Math.max(0, cur + delta));
+                          setChipHours(key, String(next));
+                        }, { passive: false });
+                      }
+                    }}
                     placeholder="e.g. 1.5"
                     aria-label={`${opType} hours`}
                   />
@@ -1286,21 +1312,60 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
                     const amountNum = Number(row.amount) || 0;
                     const overStock = amountNum > 0 && amountNum > stockQty;
                     // Group items by category
-                    const categories = [...new Set(items.map((it) => it.category || "Other"))].sort();
+                    const searchTerm = (matSearchTerms[row.id] || "").toLowerCase();
+                    const isDropOpen = !!matDropdownOpen[row.id];
+                    const filteredItems = searchTerm
+                      ? items.filter((it) => it.name.toLowerCase().includes(searchTerm) || (it.category || "").toLowerCase().includes(searchTerm))
+                      : items;
+                    const categories = [...new Set(filteredItems.map((it) => it.category || "Other"))].sort();
                     return (
                       <div key={row.id} className="materials-row">
-                        <select value={row.itemId || ""}
-                          onChange={(e) => handleUpdateRow(row.id, "itemId", e.target.value)}>
-                          {categories.map((cat) => (
-                            <optgroup key={cat} label={cat}>
-                              {items.filter((it) => (it.category || "Other") === cat).map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.name} — {item.unit} ({item.quantity} avail)
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
+                        <div className="mat-search-wrap">
+                          <input
+                            type="text"
+                            className="mat-search-input"
+                            value={isDropOpen ? (matSearchTerms[row.id] ?? "") : (selectedItem?.name || "")}
+                            onChange={(e) => {
+                              setMatSearchTerms((p) => ({ ...p, [row.id]: e.target.value }));
+                              setMatDropdownOpen((p) => ({ ...p, [row.id]: true }));
+                            }}
+                            onFocus={() => {
+                              setMatSearchTerms((p) => ({ ...p, [row.id]: "" }));
+                              setMatDropdownOpen((p) => ({ ...p, [row.id]: true }));
+                            }}
+                            onBlur={() => setTimeout(() => setMatDropdownOpen((p) => ({ ...p, [row.id]: false })), 150)}
+                            placeholder="Search materials..."
+                            aria-label="Search materials"
+                          />
+                          {isDropOpen && (
+                            <div className="mat-search-dropdown">
+                              {filteredItems.length === 0 ? (
+                                <div className="mat-search-empty">No matches</div>
+                              ) : (
+                                categories.map((cat) => (
+                                  <div key={cat}>
+                                    <div className="mat-search-cat">{cat}</div>
+                                    {filteredItems.filter((it) => (it.category || "Other") === cat).map((item) => (
+                                      <button
+                                        key={item.id}
+                                        type="button"
+                                        className={`mat-search-option${String(item.id) === String(row.itemId) ? " mat-search-option-active" : ""}`}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          handleUpdateRow(row.id, "itemId", String(item.id));
+                                          setMatDropdownOpen((p) => ({ ...p, [row.id]: false }));
+                                          setMatSearchTerms((p) => ({ ...p, [row.id]: "" }));
+                                        }}
+                                      >
+                                        {item.name} <span className="mat-search-meta">— {item.unit} ({item.quantity} avail)</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
                         <div className="material-amount-wrap">
                           <input type="number" min="0" value={row.amount}
                             className={overStock ? "material-over-stock" : ""}
@@ -1352,7 +1417,8 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
                   </div>
                   <div className="field">
                     <label>Access Method</label>
-                    <select value={accessMethod} onChange={(e) => setAccessMethod(e.target.value)}>
+                    <select value={accessMethod} onChange={(e) => setAccessMethod(e.target.value)}
+                      onWheel={(e) => { e.preventDefault(); e.target.blur(); }}>
                       <option value="">— Select —</option>
                       {ACCESS_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
                     </select>
@@ -1362,18 +1428,21 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
                       <label>Wind Speed (m/s)</label>
                       <input type="number" min="0" value={weather.windSpeed}
                         onChange={(e) => setWeather((w) => ({ ...w, windSpeed: e.target.value }))}
+                        onWheel={(e) => { e.preventDefault(); e.target.blur(); }}
                         placeholder="e.g. 8" />
                     </div>
                     <div className="field">
                       <label>Temperature (&deg;C)</label>
                       <input type="number" value={weather.temp}
                         onChange={(e) => setWeather((w) => ({ ...w, temp: e.target.value }))}
+                        onWheel={(e) => { e.preventDefault(); e.target.blur(); }}
                         placeholder="e.g. 14" />
                     </div>
                     <div className="field">
                       <label>Condition</label>
                       <select value={weather.condition}
-                        onChange={(e) => setWeather((w) => ({ ...w, condition: e.target.value }))}>
+                        onChange={(e) => setWeather((w) => ({ ...w, condition: e.target.value }))}
+                        onWheel={(e) => { e.preventDefault(); e.target.blur(); }}>
                         <option value="">— Select —</option>
                         {WEATHER_CONDITIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
@@ -1452,6 +1521,80 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
             </button>
           </div>
         </div>
+
+        {/* Collapsed summary — show hours check inline */}
+        {!timesheetOpen && dayJobs.length > 0 && (() => {
+          const entries = currentTimesheet?.entries || [];
+          const loggedMins = Math.round(dayJobHours * 60);
+          const hasTimesheet = entries.length > 0 && timesheetTotals.productive > 0;
+          const diff = hasTimesheet ? timesheetTotals.productive - loggedMins : 0;
+          const diffStatus = !hasTimesheet ? "none" : diff === 0 ? "ok" : diff > 0 ? "gap" : "over";
+
+          return (
+            <div className={`ts-collapsed-summary${diffStatus !== "none" ? ` ts-hours-check-${diffStatus}` : ""}`}>
+              <div className="ts-hc-header">
+                <span className="ts-hc-title">
+                  {diffStatus === "ok" ? "\u2713" : diffStatus === "gap" || diffStatus === "over" ? "\u26A0" : "\u2139"}{" "}
+                  Hours Check
+                </span>
+                <span className="ts-hc-total">{dayJobHours.toFixed(1)}h logged across {dayJobs.length} job{dayJobs.length !== 1 ? "s" : ""}</span>
+              </div>
+
+              {hasTimesheet && (
+                <div className="ts-hc-recon">
+                  <div className="ts-hc-bar-wrap">
+                    <div className="ts-hc-bar">
+                      <div className="ts-hc-bar-logged" style={{ width: `${Math.min(100, (loggedMins / timesheetTotals.productive) * 100)}%` }} />
+                    </div>
+                    <div className="ts-hc-bar-labels">
+                      <span>Logged: {formatMinutes(loggedMins)}</span>
+                      <span>Productive: {formatMinutes(timesheetTotals.productive)}</span>
+                    </div>
+                  </div>
+                  <div className={`ts-hc-status ts-hc-status-${diffStatus}`}>
+                    {diffStatus === "ok" && "Hours match"}
+                    {diffStatus === "gap" && `${formatMinutes(diff)} unaccounted — missing a job entry?`}
+                    {diffStatus === "over" && `${formatMinutes(Math.abs(diff))} over-logged — check operation hours`}
+                  </div>
+                </div>
+              )}
+
+              <div className="ts-hc-jobs">
+                {dayJobs.map((job) => {
+                  const ops = job.operations || [];
+                  const jobHrs = ops.reduce((s, op) => s + (parseFloat(op.duration) || 0), 0);
+                  return (
+                    <div key={job.id} className="ts-hc-job">
+                      <div className="ts-hc-job-top">
+                        <span className="ts-hc-job-label">
+                          {job.turbine}{job.bladeRef ? ` / ${job.bladeRef}` : ""}
+                          {job.damage ? ` / ${job.damage.number}` : ""}
+                        </span>
+                        <span className="ts-hc-job-hrs">{jobHrs.toFixed(1)}h</span>
+                      </div>
+                      <div className="ts-hc-job-ops">
+                        {ops.map((op, i) => (
+                          <span key={i} className="ts-hc-op">
+                            {op.type}: {parseFloat(op.duration) || 0}h
+                          </span>
+                        ))}
+                      </div>
+                      <button type="button" className="ts-hc-edit-btn" onClick={() => prefillFromJob(job)}>
+                        Edit
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {!timesheetOpen && dayJobs.length === 0 && (
+          <div className="ts-collapsed-summary">
+            <p className="empty-state small" style={{ margin: 0 }}>No jobs logged for {timesheetDate === today ? "today" : formatLongDate(timesheetDate)}.</p>
+          </div>
+        )}
 
         {timesheetOpen && (
           <div className="ts-body">
@@ -1603,43 +1746,102 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
               </div>
             )}
 
-            {/* #12 — Timesheet vs logged hours reconciliation */}
-            {entries.length > 0 && dayJobs.length > 0 && timesheetTotals.productive > 0 && (() => {
+            {/* #12 — Hours check: reconciliation + linked jobs + warnings */}
+            {dayJobs.length > 0 && (() => {
               const loggedMins = Math.round(dayJobHours * 60);
-              const diff = timesheetTotals.productive - loggedMins;
+              const hasTimesheet = entries.length > 0 && timesheetTotals.productive > 0;
+              const diff = hasTimesheet ? timesheetTotals.productive - loggedMins : 0;
+              const diffStatus = !hasTimesheet ? "none" : diff === 0 ? "ok" : diff > 0 ? "gap" : "over";
+
+              // Per-job sanity warnings
+              const jobWarnings = [];
+              dayJobs.forEach((job) => {
+                const jobHrs = (job.operations || []).reduce((s, op) => s + (parseFloat(op.duration) || 0), 0);
+                const label = `${job.turbine}${job.bladeRef ? ` / ${job.bladeRef}` : ""}${job.damage ? ` / ${job.damage.number}` : ""}`;
+                (job.operations || []).forEach((op) => {
+                  const dur = parseFloat(op.duration) || 0;
+                  if (dur > 8) jobWarnings.push(`${label}: ${op.type} is ${dur}h — did you mean ${dur > 10 ? (dur / 10).toFixed(1) : dur}h?`);
+                  if (dur > 0 && dur < 0.25) jobWarnings.push(`${label}: ${op.type} is only ${dur}h (${Math.round(dur * 60)}min)`);
+                });
+                if (jobHrs > 12) jobWarnings.push(`${label}: total ${jobHrs}h — unusually long day`);
+              });
+              if (dayJobHours > 16) jobWarnings.push(`Total logged: ${dayJobHours.toFixed(1)}h — exceeds 16 hours for one day`);
+
               return (
-                <div className="ts-reconciliation">
-                  <span>Productive: {formatMinutes(timesheetTotals.productive)}</span>
-                  <span>Logged: {formatMinutes(loggedMins)}</span>
-                  {diff > 0 && <span className="ts-recon-gap">Unaccounted: {formatMinutes(diff)}</span>}
-                  {diff < 0 && <span className="ts-recon-over">Over-logged: {formatMinutes(Math.abs(diff))}</span>}
-                  {diff === 0 && <span className="ts-recon-ok">Fully accounted</span>}
+                <div className={`ts-hours-check${diffStatus !== "none" ? ` ts-hours-check-${diffStatus}` : ""}`}>
+                  <div className="ts-hc-header">
+                    <span className="ts-hc-title">
+                      {diffStatus === "ok" ? "\u2713" : diffStatus === "gap" || diffStatus === "over" ? "\u26A0" : "\u2139"}{" "}
+                      Hours Check
+                    </span>
+                    <span className="ts-hc-total">{dayJobHours.toFixed(1)}h logged across {dayJobs.length} job{dayJobs.length !== 1 ? "s" : ""}</span>
+                  </div>
+
+                  {/* Reconciliation bar */}
+                  {hasTimesheet && (
+                    <div className="ts-hc-recon">
+                      <div className="ts-hc-bar-wrap">
+                        <div className="ts-hc-bar">
+                          <div className="ts-hc-bar-logged" style={{ width: `${Math.min(100, (loggedMins / timesheetTotals.productive) * 100)}%` }} />
+                        </div>
+                        <div className="ts-hc-bar-labels">
+                          <span>Logged: {formatMinutes(loggedMins)}</span>
+                          <span>Productive: {formatMinutes(timesheetTotals.productive)}</span>
+                        </div>
+                      </div>
+                      <div className={`ts-hc-status ts-hc-status-${diffStatus}`}>
+                        {diffStatus === "ok" && "Hours match"}
+                        {diffStatus === "gap" && `${formatMinutes(diff)} unaccounted — missing a job entry?`}
+                        {diffStatus === "over" && `${formatMinutes(Math.abs(diff))} over-logged — check operation hours`}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Per-job breakdown */}
+                  <div className="ts-hc-jobs">
+                    {dayJobs.map((job) => {
+                      const ops = job.operations || [];
+                      const jobHrs = ops.reduce((s, op) => s + (parseFloat(op.duration) || 0), 0);
+                      const hasIssue = ops.some((op) => (parseFloat(op.duration) || 0) > 8) || jobHrs > 12;
+                      return (
+                        <div key={job.id} className={`ts-hc-job${hasIssue ? " ts-hc-job-warn" : ""}`}>
+                          <div className="ts-hc-job-top">
+                            <span className="ts-hc-job-label">
+                              {job.turbine}{job.bladeRef ? ` / ${job.bladeRef}` : ""}
+                              {job.damage ? ` / ${job.damage.number}` : ""}
+                            </span>
+                            <span className="ts-hc-job-hrs">{jobHrs.toFixed(1)}h</span>
+                          </div>
+                          <div className="ts-hc-job-ops">
+                            {ops.map((op, i) => {
+                              const dur = parseFloat(op.duration) || 0;
+                              const opWarn = dur > 8 || (dur > 0 && dur < 0.25);
+                              return (
+                                <span key={i} className={`ts-hc-op${opWarn ? " ts-hc-op-warn" : ""}`}>
+                                  {op.type}: {dur}h{opWarn ? " \u26A0" : ""}
+                                </span>
+                              );
+                            })}
+                          </div>
+                          <button type="button" className="ts-hc-edit-btn" onClick={() => prefillFromJob(job)}>
+                            Edit
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Warnings */}
+                  {jobWarnings.length > 0 && (
+                    <div className="ts-hc-warnings">
+                      {jobWarnings.map((w, i) => (
+                        <p key={i} className="ts-hc-warning">{"\u26A0"} {w}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })()}
-
-            {/* Linked job hours for this date */}
-            {dayJobs.length > 0 && (
-              <div className="ts-linked-jobs">
-                <div className="ts-linked-header">
-                  <span className="ts-linked-title">Logged Work — {dayJobHours.toFixed(1)} hrs across {dayJobs.length} job{dayJobs.length !== 1 ? "s" : ""}</span>
-                </div>
-                <div className="ts-linked-list">
-                  {dayJobs.map((job) => {
-                    const jobHrs = (job.operations || []).reduce((s, op) => s + (parseFloat(op.duration) || 0), 0);
-                    return (
-                      <div key={job.id} className="ts-linked-item">
-                        <span className="ts-linked-label">
-                          {job.projectName ? `${job.projectName} / ` : ""}{job.turbine} / {job.bladeRef}
-                          {job.damage ? ` / ${job.damage.number}` : ""}
-                        </span>
-                        <span className="ts-linked-hrs">{jobHrs.toFixed(1)}h</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* #10 — Weekly summary view */}
             {tsWeekView && (() => {
@@ -1697,6 +1899,9 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
     );
   };
 
+  const [dsDamageExpanded, setDsDamageExpanded] = useState(true);
+  const [dsStatusFilter, setDsStatusFilter] = useState("all");
+
   const renderDamageSummary = () => {
     if (!project) return null;
     const { total, complete, inprogress, notstarted } = damageSummary;
@@ -1706,6 +1911,20 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
     const pctInProgress = (inprogress / total) * 100;
     const pctNotStarted = (notstarted / total) * 100;
 
+    // Collect all damages from project with their turbine/blade context
+    const allDamages = [];
+    (project.turbines || []).forEach((turbine) => {
+      (turbine.blades || []).forEach((blade) => {
+        (blade.damages || []).forEach((damage) => {
+          allDamages.push({ damage, turbine, blade });
+        });
+      });
+    });
+
+    const filteredDamages = dsStatusFilter === "all"
+      ? allDamages
+      : allDamages.filter((d) => (d.damage.status || "notstarted") === dsStatusFilter);
+
     return (
       <div className="ds-section">
         <div className="ds-header">
@@ -1713,7 +1932,17 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
             <span className="ds-total-number">{total}</span>
             <span className="ds-total-label">Damages</span>
           </div>
-          <Link to="/dashboard" className="ds-view-all">Full Dashboard &rarr;</Link>
+          <div className="ds-header-right">
+            <Link to="/dashboard" className="ds-view-all">Full Dashboard &rarr;</Link>
+            <button
+              type="button"
+              className="section-panel-collapse-btn"
+              onClick={() => setDsDamageExpanded((p) => !p)}
+              aria-label={dsDamageExpanded ? "Collapse damages" : "Expand damages"}
+            >
+              <ChevronIcon up={dsDamageExpanded} />
+            </button>
+          </div>
         </div>
         <div className="ds-bar">
           {pctComplete > 0 && (
@@ -1727,10 +1956,113 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
           )}
         </div>
         <div className="ds-legend">
-          <span className="ds-legend-item"><span className="ds-dot ds-dot-complete" />{complete} Complete</span>
-          <span className="ds-legend-item"><span className="ds-dot ds-dot-inprogress" />{inprogress} In Progress</span>
-          <span className="ds-legend-item"><span className="ds-dot ds-dot-notstarted" />{notstarted} Not Started</span>
+          {[
+            { key: "all", label: `All (${total})` },
+            { key: "complete", label: `Complete (${complete})`, dotClass: "ds-dot-complete" },
+            { key: "inprogress", label: `In Progress (${inprogress})`, dotClass: "ds-dot-inprogress" },
+            { key: "notstarted", label: `Not Started (${notstarted})`, dotClass: "ds-dot-notstarted" },
+          ].map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              className={`ds-legend-item ds-legend-btn${dsStatusFilter === f.key ? " ds-legend-active" : ""}`}
+              onClick={() => setDsStatusFilter(f.key)}
+            >
+              {f.dotClass && <span className={`ds-dot ${f.dotClass}`} />}
+              {f.label}
+            </button>
+          ))}
         </div>
+
+        {dsDamageExpanded && (
+          <div className="ds-damage-grid">
+            {filteredDamages.length === 0 ? (
+              <p className="empty-state small">No damages match this filter.</p>
+            ) : (
+              filteredDamages.map(({ damage: d, turbine, blade }) => {
+                const ds = damageStats[d.id];
+                const status = d.status || "notstarted";
+                const estimatedH = parseFloat(d.estimatedHours) || 0;
+                const loggedH = ds ? ds.totalHours : 0;
+                const pct = estimatedH > 0 ? Math.min(100, Math.round((loggedH / estimatedH) * 100)) : 0;
+                return (
+                  <div key={d.id} className="ds-damage-card">
+                    <div className="ds-damage-card-top">
+                      <span className="ds-damage-card-loc">{turbine.name} · {blade.name}</span>
+                      <span className={`dsc-status-dot dsc-status-${status}`} title={status} />
+                    </div>
+                    <div className="ds-damage-card-id">{d.number} — {d.type}</div>
+                    {(d.radius || (d.locations && d.locations.length > 0)) && (
+                      <div className="ds-damage-card-sub">
+                        {[d.radius ? `${d.radius}mm` : "", (d.locations || []).join(", ")].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
+                    {ds && (
+                      <div className="ds-damage-card-stats">
+                        <span>{loggedH.toFixed(1)}{estimatedH > 0 ? ` / ${estimatedH}` : ""} hrs</span>
+                        <span>{ds.jobCount} {ds.jobCount === 1 ? "entry" : "entries"}</span>
+                      </div>
+                    )}
+                    {estimatedH > 0 && (
+                      <div className="dsc-progress-bar" style={{ marginTop: "0.25rem" }}>
+                        <div className="dsc-progress-bar-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                    {ds?.operations?.size > 0 && (
+                      <div className="ds-damage-card-ops">
+                        {[...ds.operations].map((op) => (
+                          <span key={op} className="dsc-op-badge">{op}</span>
+                        ))}
+                      </div>
+                    )}
+                    {onUpdateDamage && (
+                      <div className="dsc-status-row">
+                        {["notstarted", "inprogress", "complete"].map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            className={`dsc-status-btn dsc-status-${s}${status === s ? " dsc-status-active" : ""}`}
+                            onClick={() => onUpdateDamage(turbine.id, blade.id, d.id, { status: s })}
+                            aria-pressed={status === s}
+                          >
+                            {s === "notstarted" ? "○" : s === "inprogress" ? "⚡" : "✓"} {s === "notstarted" ? "Not Started" : s === "inprogress" ? "In Progress" : "Complete"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="ds-damage-card-actions">
+                      <button
+                        type="button"
+                        className="ds-damage-log-btn"
+                        onClick={() => {
+                          setFormProjectId(project.id);
+                          setSelectedTurbineId(turbine.id);
+                          setSelectedBladeId(blade.id);
+                          setSelectedDamageId(d.id);
+                          setIsFormOpen(true);
+                          setActiveTab("logwork");
+                          setTimeout(() => formRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
+                        }}
+                      >
+                        + Log Work
+                      </button>
+                      <button
+                        type="button"
+                        className="ds-damage-history-btn"
+                        onClick={() => {
+                          setHistoryDamageFilter({ turbineName: turbine.name, damageNumber: d.number });
+                          setActiveTab("history");
+                        }}
+                      >
+                        History
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -1870,22 +2202,6 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
                                 </div>
                               )}
                             </div>
-                            <div className="job-card-actions">
-                              <button type="button" className="secondary-button"
-                                onClick={() => prefillFromJob(job)}>Edit</button>
-                              {/* #7 — Repeat specific job */}
-                              <button type="button" className="secondary-button"
-                                onClick={() => handleRepeatJob(job)}
-                                title="Log same work again with today's date">Repeat</button>
-                              {/* #2 — Delete job with two-step confirmation */}
-                              {onDeleteJob && (
-                                <button type="button"
-                                  className={`delete-button small${deletingJobId === job.id ? " delete-confirm" : ""}`}
-                                  onClick={() => handleDeleteJob(job)}>
-                                  {deletingJobId === job.id ? "Confirm?" : "Delete"}
-                                </button>
-                              )}
-                            </div>
                           </header>
                           <div className="job-card-body">
                             {(job.operations || []).length > 0 && (
@@ -1898,7 +2214,6 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
                                 ))}
                               </div>
                             )}
-                            {/* #9 — Show materials consumed in history cards */}
                             {(job.materials || []).length > 0 && (
                               <div className="job-card-materials">
                                 {job.materials.map((mat, i) => {
@@ -1925,6 +2240,25 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
                               </div>
                             )}
                             {job.notes && <p className="job-notes"><strong>Notes:</strong> {job.notes}</p>}
+                          </div>
+                          <div className="job-card-action-bar">
+                            <button type="button" className="jc-action-btn jc-action-edit"
+                              onClick={() => prefillFromJob(job)}>
+                              <span className="jc-action-icon">&#9998;</span> Edit
+                            </button>
+                            <button type="button" className="jc-action-btn jc-action-repeat"
+                              onClick={() => handleRepeatJob(job)}
+                              title="Log same work again with today's date">
+                              <span className="jc-action-icon">&#8635;</span> Repeat
+                            </button>
+                            {onDeleteJob && (
+                              <button type="button"
+                                className={`jc-action-btn jc-action-delete${deletingJobId === job.id ? " jc-action-delete-confirm" : ""}`}
+                                onClick={() => handleDeleteJob(job)}>
+                                <span className="jc-action-icon">{deletingJobId === job.id ? "!" : "\u2715"}</span>
+                                {deletingJobId === job.id ? "Confirm Delete" : "Delete"}
+                              </button>
+                            )}
                           </div>
                         </article>
                       ))}
@@ -2011,23 +2345,26 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
       </div>
 
       <main className="jl-layout-v3">
-        {/* 1. Log Work — primary */}
-        <section
-          className={`section-panel${activeTab !== "logwork" ? " jl-col-hidden-mobile" : ""}`}
-          ref={formRef}
-        >
-          <div className="section-panel-hd">
-            <h2 className="section-panel-title">Log Work</h2>
-          </div>
-          <div className="section-panel-body" style={{ padding: 0 }}>
-            {isFormOpen ? renderForm() : renderTodayGlance()}
-          </div>
-        </section>
+        {/* Top row: Log Work + Daily Timesheet side by side */}
+        <div className="jl-top-row">
+          {/* 1. Log Work — primary */}
+          <section
+            className={`section-panel jl-top-panel${activeTab !== "logwork" ? " jl-col-hidden-mobile" : ""}`}
+            ref={formRef}
+          >
+            <div className="section-panel-hd">
+              <h2 className="section-panel-title">Log Work</h2>
+            </div>
+            <div className="section-panel-body" style={{ padding: 0 }}>
+              {isFormOpen ? renderForm() : renderTodayGlance()}
+            </div>
+          </section>
 
-        {/* 2. Daily Timesheet */}
-        <section className={`section-panel${activeTab !== "timesheet" && activeTab !== "logwork" ? " jl-col-hidden-mobile" : ""}`}>
-          {renderTimesheet()}
-        </section>
+          {/* 2. Daily Timesheet */}
+          <section className={`section-panel jl-top-panel${activeTab !== "timesheet" && activeTab !== "logwork" ? " jl-col-hidden-mobile" : ""}`}>
+            {renderTimesheet()}
+          </section>
+        </div>
 
         {/* 3. Damage Summary — always visible */}
         {renderDamageSummary()}
