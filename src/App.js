@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 import NavBar from "./components/NavBar";
 import InventoryPage from "./components/InventoryPage";
@@ -1003,7 +1003,7 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="app-root">
         <NavBar activeProject={activeProject} />
         <Routes>
@@ -1150,7 +1150,7 @@ function App() {
           <span>Vetra Van Inventory</span>
         </footer>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
