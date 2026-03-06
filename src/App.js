@@ -6,6 +6,7 @@ import InventoryPage from "./components/InventoryPage";
 import JobLogPage from "./components/JobLogPage";
 import ProjectSetupPage from "./components/ProjectSetupPage";
 import DamageDashboard from "./components/DamageDashboard";
+import RepairDrawingPage from "./components/RepairDrawingPage";
 
 const INITIAL_ITEMS = [
 
@@ -1103,6 +1104,15 @@ function App() {
                 getStockStatusClass={getStockStatusClass}
                 onUpdateDamage={updateDamage}
                 standalone
+              />
+            }
+          />
+          <Route
+            path="/repair-drawing"
+            element={
+              <RepairDrawingPage
+                projects={projects}
+                activeProjectId={activeProjectId}
               />
             }
           />

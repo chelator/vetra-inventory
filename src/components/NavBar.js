@@ -58,6 +58,14 @@ function NavBar({ activeProject }) {
             Inventory
           </NavLink>
           <NavLink
+            to="/repair-drawing"
+            className={({ isActive }) =>
+              isActive ? "nav-link nav-link-active" : "nav-link"
+            }
+          >
+            Repair Drawing
+          </NavLink>
+          <NavLink
             to="/setup"
             className={({ isActive }) =>
               isActive ? "nav-link nav-link-active" : "nav-link"
@@ -96,6 +104,15 @@ function NavBar({ activeProject }) {
           onClick={() => setIsOpen(false)}
         >
           Inventory
+        </NavLink>
+        <NavLink
+          to="/repair-drawing"
+          className={({ isActive }) =>
+            isActive ? "nav-link nav-link-active" : "nav-link"
+          }
+          onClick={() => setIsOpen(false)}
+        >
+          Repair Drawing
         </NavLink>
         <NavLink
           to="/setup"
