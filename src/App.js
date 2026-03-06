@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import NavBar from "./components/NavBar";
 import InventoryPage from "./components/InventoryPage";
@@ -7,6 +7,35 @@ import JobLogPage from "./components/JobLogPage";
 import ProjectSetupPage from "./components/ProjectSetupPage";
 import DamageDashboard from "./components/DamageDashboard";
 import RepairDrawingPage from "./components/RepairDrawingPage";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
+function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  if (!visible) return null;
+  return (
+    <button
+      className="scroll-to-top-btn"
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label="Scroll to top"
+    >
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="4,11 9,6 14,11" />
+      </svg>
+    </button>
+  );
+}
 
 const INITIAL_ITEMS = [
 
@@ -1004,6 +1033,7 @@ function App() {
 
   return (
     <HashRouter>
+      <ScrollToTop />
       <div className="app-root">
         <NavBar activeProject={activeProject} />
         <Routes>
@@ -1149,6 +1179,7 @@ function App() {
         <footer className="app-footer">
           <span>Vetra Van Inventory</span>
         </footer>
+        <ScrollToTopButton />
       </div>
     </HashRouter>
   );

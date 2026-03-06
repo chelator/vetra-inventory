@@ -586,7 +586,7 @@ function ProjectSetupPage({
             </form>
 
             {projects.length === 0 ? (
-              <p className="empty-state">No projects yet. Create your first project above.</p>
+              <p className="empty-state">No projects yet — create one above to get started.</p>
             ) : (
               <div className="setup-project-grid">
                 {projects.map((project) => {
@@ -743,7 +743,7 @@ function ProjectSetupPage({
                 </div>
 
                 {allDamagesFlat.length === 0 ? (
-                  <p className="empty-state">No damages match the filter.</p>
+                  <p className="empty-state">No damages match the selected filter.</p>
                 ) : (
                   <div className="all-damages-list">
                     {allDamagesFlat.map((item) => {
@@ -813,7 +813,7 @@ function ProjectSetupPage({
             </form>
 
             {activeProject.turbines.length === 0 ? (
-              <p className="empty-state">No turbines yet. Add a turbine above.</p>
+              <p className="empty-state">Add a turbine to start tracking blades and damages.</p>
             ) : (
               <div className="setup-project-grid">
                 {activeProject.turbines.map((turbine) => {
@@ -1013,7 +1013,7 @@ function ProjectSetupPage({
             </form>
 
             {selectedTurbine.blades.length === 0 ? (
-              <p className="empty-state">No blades yet. Add a blade above.</p>
+              <p className="empty-state">Add blades to this turbine to begin tracking repairs.</p>
             ) : (
               <div className="setup-project-grid">
                 {selectedTurbine.blades.map((blade) => {
@@ -1180,7 +1180,7 @@ function ProjectSetupPage({
             </div>
 
             {selectedBlade.damages.length === 0 ? (
-              <p className="empty-state">No damages yet. Add a damage above.</p>
+              <p className="empty-state">No damages recorded — add one to start tracking repairs.</p>
             ) : (
               <div className="damage-list">
                 {selectedBlade.damages.map((damage) => {

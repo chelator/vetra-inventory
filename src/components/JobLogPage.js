@@ -792,7 +792,7 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
   const renderDamageCards = () => {
     const damages = selectedBlade?.damages || [];
     if (damages.length === 0)
-      return <p className="empty-state small">No damages configured for this blade.</p>;
+      return <p className="empty-state small">No damages configured for this blade. Add damages in Project Setup.</p>;
     return (
       <div className="damage-card-grid">
         {damages.map((d) => {
@@ -1977,7 +1977,7 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
         {dsDamageExpanded && (
           <div className="ds-damage-grid">
             {filteredDamages.length === 0 ? (
-              <p className="empty-state small">No damages match this filter.</p>
+              <p className="empty-state small">No damages match the selected filter.</p>
             ) : (
               filteredDamages.map(({ damage: d, turbine, blade }) => {
                 const ds = damageStats[d.id];
@@ -2137,8 +2137,8 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
 
         {dates.length === 0 ? (
           jobHistory.length === 0
-            ? <p className="empty-state">No jobs logged yet.</p>
-            : <p className="empty-state">No jobs match the current filters.</p>
+            ? <p className="empty-state">No jobs logged yet. Select a turbine and blade above to start logging work.</p>
+            : <p className="empty-state">No jobs match the current filters. Try adjusting your search or date range.</p>
         ) : (
           <div className="job-history-list">
             {dates.map((d) => {

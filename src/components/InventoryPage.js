@@ -64,6 +64,7 @@ function InventoryPage({
   const [pendingQtyChange, setPendingQtyChange] = useState(null); // {itemId, amount}
   const pendingQtyTimerRef = useRef(null);
   const addFormRef = useRef(null);
+  const addNameRef = useRef(null);
 
   // Receive stock state
   const [receiveStockOpen, setReceiveStockOpen] = useState(false);
@@ -161,6 +162,20 @@ function InventoryPage({
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [selectedItemId, closeDetailPanel]);
+
+  // Auto-focus name input when add form opens
+  useEffect(() => {
+    if (addFormOpen) {
+      setTimeout(() => addNameRef.current?.focus(), 100);
+    }
+  }, [addFormOpen]);
+
+  // Auto-focus detail panel when it opens (accessibility)
+  useEffect(() => {
+    if (selectedItemId) {
+      setTimeout(() => detailPanelRef.current?.focus(), 100);
+    }
+  }, [selectedItemId]);
 
   // ── Consumption rate (weekly, last 30 days) ───────────────────
   const consumptionRates = useMemo(() => {
@@ -1391,6 +1406,7 @@ function InventoryPage({
                     <label htmlFor="name">Name</label>
                     <input
                       id="name"
+                      ref={addNameRef}
                       type="text"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
@@ -1712,7 +1728,7 @@ function InventoryPage({
 
           {/* ── Detail Side Panel ────────────────────────────────── */}
           {selectedItem && (
-            <aside className="inv-detail-panel" ref={detailPanelRef}>
+            <aside className="inv-detail-panel" ref={detailPanelRef} tabIndex={-1}>
               <div className="inv-detail-panel-header">
                 <h3 className="inv-detail-panel-title">{selectedItem.name}</h3>
                 <button
