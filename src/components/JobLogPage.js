@@ -17,6 +17,7 @@ const OPERATION_WORKFLOW = [
   "Lamination", "Curing", "Vacuum Infusion", "Primer", "Topcoat", "Inspection",
 ];
 const MULTI_PASS_OPS = new Set(["Filler Application", "Sanding Fine", "Topcoat", "Primer"]);
+const QUICK_OPS = ["Grinding", "Sanding Coarse", "Lamination", "Filler Application"];
 
 const TIMESHEET_ACTIVITIES = [
   "Hotel Leave", "Arrive Turbine", "Work Starts", "Break Start",
@@ -131,6 +132,9 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
   const [successMessage, setSuccessMessage] = useState("");
   const [undoJob, setUndoJob] = useState(null); // #11 undo after submit
   const [deletingJobId, setDeletingJobId] = useState(null); // #2 two-step delete
+  const [draftSavedFlash, setDraftSavedFlash] = useState(false); // auto-save indicator
+  const draftSavedTimerRef = useRef(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false); // confirm before discard
   const [highlightedJobId, setHighlightedJobId] = useState(null);
   const [activeTab, setActiveTab] = useState("logwork");
   const [historyTurbineFilter, setHistoryTurbineFilter] = useState("All");
@@ -234,9 +238,29 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
     setTimeout(() => formRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
+  const formHasChanges = () => {
+    return selectedTurbineId || selectedBladeId || Object.keys(chipOps).length > 0
+      || notes.trim() || materialsUsed.length > 0;
+  };
+
   const closeForm = () => {
+    if (formHasChanges() && !showDiscardConfirm) {
+      setShowDiscardConfirm(true);
+      return;
+    }
+    setShowDiscardConfirm(false);
     setIsFormOpen(false);
     resetFormFields();
+  };
+
+  const confirmDiscard = () => {
+    setShowDiscardConfirm(false);
+    setIsFormOpen(false);
+    resetFormFields();
+  };
+
+  const cancelDiscard = () => {
+    setShowDiscardConfirm(false);
   };
 
   // #5 — Auto-save form draft
@@ -246,6 +270,10 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
     if (!hasContent) return;
     const draft = { date, formProjectId, selectedTurbineId, selectedBladeId, selectedDamageId, chipOps, opNotes, technician, accessMethod, weather, notes, materialsUsed };
     try { localStorage.setItem("vetra-job-draft", JSON.stringify(draft)); } catch {}
+    // Flash "Draft saved" indicator
+    setDraftSavedFlash(true);
+    if (draftSavedTimerRef.current) clearTimeout(draftSavedTimerRef.current);
+    draftSavedTimerRef.current = setTimeout(() => setDraftSavedFlash(false), 1500);
   }, [isFormOpen, editingJobId, date, formProjectId, selectedTurbineId, selectedBladeId, selectedDamageId, chipOps, opNotes, technician, accessMethod, weather, notes, materialsUsed]);
 
   const restoreDraft = () => {
@@ -344,19 +372,19 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
   const handleSubmit = (e) => {
     e.preventDefault();
     const errors = [];
-    if (!formProjectId) errors.push("Please select a project.");
-    if (!selectedTurbineId) errors.push("Please select a turbine.");
+    if (!formProjectId) errors.push({ field: "project", msg: "Please select a project." });
+    if (!selectedTurbineId) errors.push({ field: "turbine", msg: "Please select a turbine." });
     // #13 multi-blade: validate at least one blade
     if (multiBladeMode) {
-      if (selectedBladeIds.length === 0) errors.push("Please select at least one blade.");
+      if (selectedBladeIds.length === 0) errors.push({ field: "blade", msg: "Please select at least one blade." });
     } else {
-      if (!selectedBladeId) errors.push("Please select a blade.");
+      if (!selectedBladeId) errors.push({ field: "blade", msg: "Please select a blade." });
     }
     const activeOps = Object.entries(chipOps);
-    if (activeOps.length === 0) errors.push("Select at least one operation.");
+    if (activeOps.length === 0) errors.push({ field: "operations", msg: "Select at least one operation." });
     activeOps.forEach(([opName, v]) => {
       if (!v.hours || Number(v.hours) <= 0) {
-        errors.push(`Please enter hours for ${opName}.`);
+        errors.push({ field: `op-${opName}`, msg: `Enter hours for ${opName}.` });
       }
     });
     if (errors.length > 0) { setFormErrors(errors); return; }
@@ -438,7 +466,7 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
       if (accessMethod) localStorage.setItem("vetra-last-access-method", accessMethod);
     } catch {}
 
-    closeForm();
+    confirmDiscard();
     const count = submittedJobs.length;
     setSuccessMessage(wasEditing ? "Job updated \u2713" : count > 1 ? `${count} jobs logged \u2713` : "Job logged \u2713");
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
@@ -881,7 +909,7 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
     <div className="op-chip-grid">
       {OPERATION_TYPES.map((opType) => {
         const active = !!chipOps[opType];
-        const hasError = active && formErrors.some((e) => e.includes(opType));
+        const hasError = active && formErrors.some((e) => e.field === `op-${opType}`);
         const isSuggested = !active && suggestedOps.has(opType);
         return (
           <div key={opType} className="op-chip-row">
@@ -966,9 +994,25 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
 
     return (
       <form onSubmit={handleSubmit} className="jl-form-inner">
+        {/* Discard confirmation bar */}
+        {showDiscardConfirm && (
+          <div className="jl-discard-bar" role="alert">
+            <span>You have unsaved changes.</span>
+            <div className="jl-discard-bar-actions">
+              <button type="button" className="jl-discard-btn" onClick={confirmDiscard}>Discard</button>
+              <button type="button" className="jl-keep-btn" onClick={cancelDiscard}>Keep Editing</button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="jl-form-header">
-          <h2 className="jl-form-title">{editingJobId ? "Edit Job" : "New Job Entry"}</h2>
+          <h2 className="jl-form-title">
+            {editingJobId ? "Edit Job" : "New Job Entry"}
+            {draftSavedFlash && !editingJobId && (
+              <span className="jl-draft-saved">Draft saved</span>
+            )}
+          </h2>
           <button type="button" className="jl-close-btn" onClick={closeForm} aria-label="Close form">
             <XIcon /> Close
           </button>
@@ -1003,13 +1047,16 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
         {/* Steps */}
         <div className="selection-steps">
           {/* Step 0: Project */}
-          <div className="selection-step">
+          <div className={`selection-step${formErrors.some((e) => e.field === "project") ? " field-error" : ""}`}>
             <p className="step-label">
               <span className={`step-num${stepProjectDone ? " step-num-done" : ""}`}>
                 {stepProjectDone ? "\u2713" : "1"}
               </span>
               Project
             </p>
+            {formErrors.some((e) => e.field === "project") && (
+              <p className="field-error-msg">{formErrors.find((e) => e.field === "project").msg}</p>
+            )}
             {activeProjects.length >= 3 && (
               <input
                 type="text"
@@ -1091,13 +1138,16 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
 
           {/* Step 1: Turbine */}
           {stepProjectDone && (
-            <div className="selection-step">
+            <div className={`selection-step${formErrors.some((e) => e.field === "turbine") ? " field-error" : ""}`}>
               <p className="step-label">
                 <span className={`step-num${step1Done ? " step-num-done" : ""}`}>
                   {step1Done ? "\u2713" : "2"}
                 </span>
                 Turbine
               </p>
+              {formErrors.some((e) => e.field === "turbine") && (
+                <p className="field-error-msg">{formErrors.find((e) => e.field === "turbine").msg}</p>
+              )}
               <div className="pill-row">
                 {formTurbines.map((t) => {
                   const tDmgCount = (t.blades || []).reduce((sum, b) => sum + (b.damages || []).length, 0);
@@ -1124,7 +1174,10 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
 
           {/* Step 2: Blade */}
           {step1Done && (
-            <div className="selection-step">
+            <div className={`selection-step${formErrors.some((e) => e.field === "blade") ? " field-error" : ""}`}>
+              {formErrors.some((e) => e.field === "blade") && (
+                <p className="field-error-msg">{formErrors.find((e) => e.field === "blade").msg}</p>
+              )}
               <div className="step-label-row">
                 <p className="step-label">
                   <span className={`step-num${step2Done ? " step-num-done" : ""}`}>
@@ -1287,8 +1340,28 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
               );
             })()}
 
-            <div className="jl-ops-section">
+            <div className={`jl-ops-section${formErrors.some((e) => e.field === "operations") ? " field-error" : ""}`}>
               <h3 className="jl-section-label">Operations</h3>
+              {formErrors.some((e) => e.field === "operations") && (
+                <p className="field-error-msg">{formErrors.find((e) => e.field === "operations").msg}</p>
+              )}
+              {/* Quick-select common operations */}
+              <div className="op-quick-select">
+                <span className="op-quick-select-label">Quick add:</span>
+                {QUICK_OPS.map((opType) => {
+                  const active = !!chipOps[opType];
+                  return (
+                    <button
+                      key={opType}
+                      type="button"
+                      className={`op-quick-select-btn${active ? " op-quick-select-btn-active" : ""}`}
+                      onClick={() => toggleChip(opType)}
+                    >
+                      {active ? "\u2713 " : "+ "}{opType}
+                    </button>
+                  );
+                })}
+              </div>
               {renderChipGrid()}
             </div>
 
@@ -1463,7 +1536,7 @@ function JobLogPage({ items, project, projects, jobHistory, timesheets, setTimes
         {formErrors.length > 0 && (
           <div className="form-error-list" role="alert">
             {formErrors.map((err, i) => (
-              <p key={i} className="form-error-item">{err}</p>
+              <p key={i} className="form-error-item">{err.msg}</p>
             ))}
           </div>
         )}

@@ -588,7 +588,8 @@ function InventoryPage({
       });
     });
     if (rows.length === 0) {
-      alert("No material usage data for this project.");
+      showToast("No material usage data for this project.", "info");
+      setExportMenuOpen(false);
       return;
     }
     const escapeCSV = (val) => {
@@ -1891,16 +1892,49 @@ function InventoryPage({
                       </div>
                     )}
 
-                    <button type="button" className="secondary-button inv-detail-edit-btn" onClick={() => startEdit(selectedItem)}>
-                      &#9998; Edit Details
-                    </button>
-
-                    {/* Restock button */}
-                    {selectedItem.minStock > 0 && selectedItem.quantity < selectedItem.minStock && (
-                      <button type="button" className="secondary-button small restock-btn" onClick={() => handleRestock(selectedItem)}>
-                        Restock to {selectedItem.minStock}
-                      </button>
+                    {/* Stock level bar */}
+                    {selectedItem.minStock > 0 && (
+                      <div className="inv-detail-stock-bar-section">
+                        <span className="inv-detail-label">Stock Level</span>
+                        <div className="inv-detail-stock-bar">
+                          <div
+                            className={`inv-detail-stock-bar-fill${selectedItem.quantity <= selectedItem.minStock ? " inv-detail-stock-bar-low" : ""}`}
+                            style={{ width: `${Math.min(100, (selectedItem.quantity / (selectedItem.minStock * 2)) * 100)}%` }}
+                          />
+                          <div
+                            className="inv-detail-stock-bar-threshold"
+                            style={{ left: "50%" }}
+                            title={`Min: ${selectedItem.minStock}`}
+                          />
+                        </div>
+                        <div className="inv-detail-stock-bar-labels">
+                          <span>0</span>
+                          <span className="inv-detail-stock-bar-min">Min: {selectedItem.minStock}</span>
+                          <span>{selectedItem.minStock * 2}+</span>
+                        </div>
+                      </div>
                     )}
+
+                    <div className="inv-detail-action-row">
+                      <button type="button" className="secondary-button inv-detail-edit-btn" onClick={() => startEdit(selectedItem)}>
+                        &#9998; Edit Details
+                      </button>
+
+                      {/* Restock button */}
+                      {selectedItem.minStock > 0 && selectedItem.quantity < selectedItem.minStock && (
+                        <button type="button" className="secondary-button small restock-btn" onClick={() => handleRestock(selectedItem)}>
+                          Restock to {selectedItem.minStock}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className="delete-button small inv-detail-delete-btn"
+                        onClick={() => handleDeleteStep(selectedItem)}
+                      >
+                        {confirmDeleteId === selectedItem.id ? "Confirm Delete?" : "Delete Item"}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

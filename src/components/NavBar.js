@@ -14,8 +14,10 @@ function NavBar({ activeProject }) {
               🌬️
             </span>
             <span className="nav-title">Vetra Van</span>
-            {activeProject && (
+            {activeProject ? (
               <span className="nav-project-name">{activeProject.name}</span>
+            ) : (
+              <span className="nav-project-name nav-project-none">No project</span>
             )}
           </div>
         </div>

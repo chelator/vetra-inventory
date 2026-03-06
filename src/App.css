@@ -13,6 +13,8 @@
   --near-black: #1A1917;
   --swiss-red: #E63329;
   --swiss-red-dark: #C42820;
+  --swiss-green: #2a9d8f;
+  --swiss-amber: #e9a820;
   --grid-unit: 8px;
 }
 
@@ -121,6 +123,14 @@ body {
   white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-project-none {
+  color: var(--mid-gray);
+  border-color: var(--mid-gray);
+  font-style: italic;
 }
 
 .nav-links {
@@ -561,6 +571,13 @@ textarea {
 .delete-button.small {
   padding-inline: 0.6rem;
   font-size: 0.7rem;
+}
+
+.delete-button.delete-confirm-active {
+  background: var(--swiss-red);
+  color: white;
+  border-color: var(--swiss-red);
+  animation: subtle-pulse 1s ease-in-out infinite;
 }
 
 /* ── Form errors ───────────────────────────────────────────── */
@@ -4859,6 +4876,163 @@ input[type="date"]:focus {
   padding-bottom: 0 !important;
 }
 
+/* ── Dashboard empty state ── */
+.dash-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  gap: 0.75rem;
+}
+.dash-empty-icon {
+  font-size: 2.5rem;
+  color: var(--mid-gray);
+  line-height: 1;
+}
+.dash-empty-title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  color: var(--near-black);
+  margin: 0;
+}
+.dash-empty-desc {
+  font-size: 0.85rem;
+  color: var(--mid-gray);
+  max-width: 360px;
+  margin: 0;
+  line-height: 1.5;
+}
+.dash-empty-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.dash-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1.25rem;
+  border-radius: 2px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: background 0.15s, color 0.15s;
+}
+.dash-empty-btn-primary {
+  background: var(--near-black);
+  color: var(--white);
+}
+.dash-empty-btn-primary:hover {
+  background: var(--swiss-red);
+}
+.dash-empty-btn-secondary {
+  background: var(--white);
+  color: var(--near-black);
+  border: 1px solid var(--light-gray);
+}
+.dash-empty-btn-secondary:hover {
+  border-color: var(--near-black);
+}
+
+/* ── Dashboard stat highlight ── */
+.dash-stat-highlight {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.75rem;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  color: var(--near-black);
+}
+.dash-ov-stat-sub {
+  font-size: 0.65rem;
+  color: var(--mid-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 0.1rem;
+}
+
+/* ── Last operation badge on damage card ── */
+.ddc-last-op-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  background: var(--off-white);
+  border: 1px solid var(--light-gray);
+  border-radius: 2px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--near-black);
+  white-space: nowrap;
+}
+
+/* ── Prominent Log Work button ── */
+.ddc-log-work-prominent {
+  background: var(--near-black) !important;
+  color: var(--white) !important;
+  font-weight: 700 !important;
+  padding: 0.35rem 0.85rem !important;
+  border-radius: 2px !important;
+  border: none !important;
+  font-size: 0.7rem !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+.ddc-log-work-prominent:hover {
+  background: var(--swiss-red) !important;
+}
+
+/* ── Status cycle button ── */
+.ddc-status-cycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 2px;
+  border: 1px solid var(--light-gray);
+  background: var(--white);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 36px;
+  width: 100%;
+  justify-content: center;
+}
+.ddc-status-cycle:hover {
+  border-color: var(--near-black);
+}
+.ddc-status-cycle.ddc-status-notstarted {
+  color: var(--mid-gray);
+  background: var(--off-white);
+}
+.ddc-status-cycle.ddc-status-inprogress {
+  color: var(--white);
+  background: var(--near-black);
+  border-color: var(--near-black);
+}
+.ddc-status-cycle.ddc-status-complete {
+  color: var(--white);
+  background: var(--swiss-red);
+  border-color: var(--swiss-red);
+}
+
+/* ── Collapsed summary highlight ── */
+.dash2-summary-highlight {
+  font-weight: 700;
+  color: var(--near-black);
+}
+
 /* Section panel collapsible header */
 .section-panel-hd-toggle {
   cursor: pointer;
@@ -5894,10 +6068,63 @@ input[type="date"]:focus {
   margin-top: 0.25rem;
 }
 
+.inv-detail-action-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
 .inv-detail-edit-btn {
-  margin-top: 0.5rem;
   width: 100%;
   text-align: center;
+}
+
+.inv-detail-delete-btn {
+  width: 100%;
+  text-align: center;
+  margin-top: 0.25rem;
+}
+
+/* Stock level bar */
+.inv-detail-stock-bar-section {
+  margin-top: 0.75rem;
+}
+.inv-detail-stock-bar {
+  position: relative;
+  height: 8px;
+  background: var(--light-gray);
+  border-radius: 4px;
+  overflow: visible;
+  margin-top: 0.25rem;
+}
+.inv-detail-stock-bar-fill {
+  height: 100%;
+  background: var(--swiss-green, #2a9d8f);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.inv-detail-stock-bar-fill.inv-detail-stock-bar-low {
+  background: var(--swiss-red);
+}
+.inv-detail-stock-bar-threshold {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  background: var(--near-black);
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+.inv-detail-stock-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--mid-gray);
+  margin-top: 2px;
+}
+.inv-detail-stock-bar-min {
+  font-weight: 600;
 }
 
 .inv-detail-edit-section .inv-detail-edit-grid {
@@ -9415,4 +9642,293 @@ textarea:focus {
       padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     }
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UX ENHANCEMENTS — TARGETED CSS IMPROVEMENTS
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Touch target sizing (minimum 44px on mobile) ─────────── */
+/* Ensures all interactive elements meet WCAG 2.5.5 recommended
+   minimum touch target size on mobile devices. */
+@media (max-width: 768px) {
+  .btn,
+  button,
+  select,
+  .nav-link,
+  .chip,
+  .filter-chip,
+  .quick-filter-btn {
+    min-height: 44px;
+  }
+}
+
+/* ── 2. Better select dropdowns ──────────────────────────────── */
+/* Custom chevron arrow for all selects, removing default browser
+   appearance for a consistent cross-platform look. */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234A4845' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+/* ── 3. Smooth expand/collapse transitions (generic) ─────────── */
+/* Reusable class for any collapsible content sections.
+   Complements the existing .setup-collapsible-body transition. */
+.collapsible-content {
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.collapsible-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* ── 4. Better card shadows on mobile ────────────────────────── */
+/* Slightly more pronounced shadows on mobile for visual depth,
+   since mobile screens have less contrast differentiation. */
+@media (max-width: 768px) {
+  .card,
+  .inv-card,
+  .job-card,
+  .dashboard-damage-card,
+  .dash2-damage-card,
+  .ds-damage-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* ── 5. Skeleton/shimmer already defined above (line ~9296) ──── */
+/* No duplication needed — .skeleton and @keyframes shimmer exist. */
+
+/* ── 6. Improved input focus states ──────────────────────────── */
+/* Enhances the existing subtle box-shadow with a sky-blue glow
+   for clearer focus indication on text inputs and textareas. */
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+  border-color: #5b8cbe;
+  box-shadow: 0 0 0 3px rgba(91, 140, 190, 0.15);
+}
+
+/* ── 7. Status badge improvements ────────────────────────────── */
+/* Rounded pill shapes and improved contrast for status badges.
+   Overrides the default border-radius: 0 with a subtle pill. */
+.status-badge-complete,
+.status-badge-inprogress,
+.status-badge-notstarted {
+  border-radius: 2px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+}
+.status-badge-notstarted {
+  background: var(--light-gray);
+  color: var(--near-black);
+}
+
+/* ── 8. Print styles ─────────────────────────────────────────── */
+/* Clean print layout: hides navigation, bottom tabs, and action
+   buttons. Shows content in a readable single-column format. */
+@media print {
+  /* Hide interactive/navigation elements */
+  .nav-wrapper,
+  .nav-bottom-tabs,
+  .scroll-to-top-btn,
+  .app-footer,
+  button,
+  .btn,
+  .primary-button,
+  .secondary-button,
+  .delete-button,
+  .pill-button,
+  .quantity-controls,
+  .inv-toolbar,
+  .inv-quick-filters,
+  .inv-fab,
+  .inv-bottom-menu-overlay,
+  .jl-sticky-submit,
+  .add-form,
+  .form-toggle-btn {
+    display: none !important;
+  }
+
+  /* Reset backgrounds and shadows for clean printing */
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 12pt;
+  }
+  .app-root {
+    padding-bottom: 0;
+  }
+  .card,
+  .inv-card,
+  .job-card,
+  .project-card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Full-width content */
+  .inv-main,
+  .jl-layout-v3,
+  .setup-content {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  /* Ensure links show their URL */
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+  /* But not for navigation links */
+  .nav-link[href]::after {
+    content: none;
+  }
+}
+
+/* ── Inline form validation ──────────────────────────────────────────────── */
+.field-error {
+  border-left: 3px solid var(--swiss-red);
+  padding-left: 0.75rem;
+}
+
+.field-error-msg {
+  color: var(--swiss-red);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0.15rem 0 0.35rem;
+  line-height: 1.3;
+}
+
+/* ── Discard confirmation bar ─────────────────────────────────────────────── */
+.jl-discard-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: #fff3cd;
+  border: 1px solid #e2c565;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--near-black);
+}
+
+.jl-discard-bar-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.jl-discard-btn {
+  background: var(--swiss-red);
+  color: #fff;
+  border: none;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.jl-discard-btn:hover {
+  background: #c42a22;
+}
+
+.jl-keep-btn {
+  background: transparent;
+  color: var(--near-black);
+  border: 1px solid var(--near-black);
+  padding: 0.3rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.jl-keep-btn:hover {
+  background: var(--near-black);
+  color: #fff;
+}
+
+/* ── Draft saved indicator ────────────────────────────────────────────────── */
+.jl-draft-saved {
+  display: inline-block;
+  margin-left: 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--mid-gray);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  animation: jl-draft-fade 1.5s ease forwards;
+}
+
+@keyframes jl-draft-fade {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── Operation quick-select buttons ───────────────────────────────────────── */
+.op-quick-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.op-quick-select-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--mid-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 0.15rem;
+}
+
+.op-quick-select-btn {
+  background: var(--off-white);
+  border: 1px solid var(--light-gray);
+  color: var(--near-black);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.op-quick-select-btn:hover {
+  border-color: var(--near-black);
+  background: #fff;
+}
+
+.op-quick-select-btn-active {
+  background: var(--near-black);
+  color: #fff;
+  border-color: var(--near-black);
+}
+
+.op-quick-select-btn-active:hover {
+  background: #333;
+  color: #fff;
 }

@@ -222,15 +222,28 @@ function ProjectSetupPage({
     setSelectedBladeId(null);
   };
 
-  // --- Delete handlers with confirm + localStorage cleanup ---
+  // --- Two-step inline delete confirmation ---
+  const [confirmDeleteKey, setConfirmDeleteKey] = useState(null);
+  const confirmDeleteTimerRef = React.useRef(null);
+
+  const requestDelete = (key) => {
+    if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
+    setConfirmDeleteKey(key);
+    confirmDeleteTimerRef.current = setTimeout(() => setConfirmDeleteKey(null), 4000);
+  };
+
   const handleDeleteProject = (project) => {
-    if (!window.confirm(`Delete project "${project.name}" and all its turbines and damages?`)) return;
+    const key = `project-${project.id}`;
+    if (confirmDeleteKey !== key) { requestDelete(key); return; }
+    setConfirmDeleteKey(null);
     onDeleteProject(project.id);
     showToast(`Project "${project.name}" deleted`);
   };
 
   const handleDeleteTurbine = (turbine) => {
-    if (!window.confirm(`Delete turbine "${turbine.name}"? All its blades and damages will be removed.`)) return;
+    const key = `turbine-${turbine.id}`;
+    if (confirmDeleteKey !== key) { requestDelete(key); return; }
+    setConfirmDeleteKey(null);
     onDeleteTurbine(turbine.id);
     showToast(`Turbine "${turbine.name}" deleted`);
     if (selectedTurbineId === turbine.id) {
@@ -240,7 +253,9 @@ function ProjectSetupPage({
   };
 
   const handleDeleteBlade = (turbineId, blade) => {
-    if (!window.confirm(`Delete blade "${blade.name}"? All its damages will be removed.`)) return;
+    const key = `blade-${blade.id}`;
+    if (confirmDeleteKey !== key) { requestDelete(key); return; }
+    setConfirmDeleteKey(null);
     onDeleteBlade(turbineId, blade.id);
     showToast(`Blade "${blade.name}" deleted`);
     if (selectedBladeId === blade.id) {
@@ -254,7 +269,9 @@ function ProjectSetupPage({
   };
 
   const handleDeleteDamage = (turbineId, bladeId, damage) => {
-    if (!window.confirm(`Delete ${damage.number || "this damage"}?`)) return;
+    const key = `damage-${damage.id}`;
+    if (confirmDeleteKey !== key) { requestDelete(key); return; }
+    setConfirmDeleteKey(null);
     onDeleteDamage(turbineId, bladeId, damage.id);
     showToast(`${damage.number || "Damage"} deleted`);
     setExpandedDamages((prev) => { const next = { ...prev }; delete next[damage.id]; return next; });
@@ -675,10 +692,10 @@ function ProjectSetupPage({
                         )}
                         <button
                           type="button"
-                          className="delete-button small"
+                          className={`delete-button small${confirmDeleteKey === `project-${project.id}` ? " delete-confirm-active" : ""}`}
                           onClick={() => handleDeleteProject(project)}
                         >
-                          Delete
+                          {confirmDeleteKey === `project-${project.id}` ? "Confirm Delete?" : "Delete"}
                         </button>
                       </div>
                     </div>
@@ -908,10 +925,10 @@ function ProjectSetupPage({
                             )}
                             <button
                               type="button"
-                              className="delete-button small"
+                              className={`delete-button small${confirmDeleteKey === `turbine-${turbine.id}` ? " delete-confirm-active" : ""}`}
                               onClick={() => handleDeleteTurbine(turbine)}
                             >
-                              Delete
+                              {confirmDeleteKey === `turbine-${turbine.id}` ? "Confirm?" : "Delete"}
                             </button>
                           </>
                         )}
@@ -1096,10 +1113,10 @@ function ProjectSetupPage({
                             </button>
                             <button
                               type="button"
-                              className="delete-button small"
+                              className={`delete-button small${confirmDeleteKey === `blade-${blade.id}` ? " delete-confirm-active" : ""}`}
                               onClick={() => handleDeleteBlade(selectedTurbine.id, blade)}
                             >
-                              Delete
+                              {confirmDeleteKey === `blade-${blade.id}` ? "Confirm?" : "Delete"}
                             </button>
                           </>
                         )}
@@ -1221,10 +1238,10 @@ function ProjectSetupPage({
                           <div className="dmg-card-collapsed-actions" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
-                              className="delete-button small"
+                              className={`delete-button small${confirmDeleteKey === `damage-${damage.id}` ? " delete-confirm-active" : ""}`}
                               onClick={() => handleDeleteDamage(selectedTurbine.id, selectedBlade.id, damage)}
                             >
-                              Delete
+                              {confirmDeleteKey === `damage-${damage.id}` ? "Confirm?" : "Delete"}
                             </button>
                           </div>
                         </div>
@@ -1247,10 +1264,10 @@ function ProjectSetupPage({
                           </button>
                           <button
                             type="button"
-                            className="delete-button small"
+                            className={`delete-button small${confirmDeleteKey === `damage-${damage.id}` ? " delete-confirm-active" : ""}`}
                             onClick={() => handleDeleteDamage(selectedTurbine.id, selectedBlade.id, damage)}
                           >
-                            Delete
+                            {confirmDeleteKey === `damage-${damage.id}` ? "Confirm?" : "Delete"}
                           </button>
                         </div>
                       </div>

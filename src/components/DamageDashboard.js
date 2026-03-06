@@ -422,20 +422,24 @@ function DamageDashboard({
               </div>
               <div className="dash-ov-stats-grid dash-ov-stats-4col">
                 <div className="dash-ov-stat">
-                  <span className="dash-ov-stat-val">{stats.todayHours.toFixed(1)}</span>
                   <span className="dash-ov-stat-label">Today</span>
+                  <span className="dash-ov-stat-val dash-stat-highlight">{stats.todayHours.toFixed(1)}</span>
+                  <span className="dash-ov-stat-sub">{stats.todayJobs} job{stats.todayJobs !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="dash-ov-stat">
-                  <span className="dash-ov-stat-val">{stats.weekHours.toFixed(1)}</span>
                   <span className="dash-ov-stat-label">This week</span>
+                  <span className="dash-ov-stat-val dash-stat-highlight">{stats.weekHours.toFixed(1)}</span>
+                  <span className="dash-ov-stat-sub">{stats.weekJobs} job{stats.weekJobs !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="dash-ov-stat">
-                  <span className="dash-ov-stat-val">{stats.monthHours.toFixed(1)}</span>
                   <span className="dash-ov-stat-label">This month</span>
+                  <span className="dash-ov-stat-val dash-stat-highlight">{stats.monthHours.toFixed(1)}</span>
+                  <span className="dash-ov-stat-sub">{stats.monthJobs} job{stats.monthJobs !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="dash-ov-stat">
-                  <span className="dash-ov-stat-val">{stats.totalHours.toFixed(1)}</span>
                   <span className="dash-ov-stat-label">All time</span>
+                  <span className="dash-ov-stat-val dash-stat-highlight">{stats.totalHours.toFixed(1)}</span>
+                  <span className="dash-ov-stat-sub">{stats.totalJobs} job{stats.totalJobs !== 1 ? "s" : ""}</span>
                 </div>
               </div>
               {(stats.weekDelay > 0 || stats.monthDelay > 0) && (
@@ -444,12 +448,7 @@ function DamageDashboard({
                   {stats.monthDelay > 0 && <span className="dash-ov-delay-chip">Month delay: {stats.monthDelay.toFixed(1)}h</span>}
                 </div>
               )}
-              <div className="dash-ov-jobs-row">
-                <span>{stats.todayJobs} today</span>
-                <span>{stats.weekJobs} this week</span>
-                <span>{stats.monthJobs} this month</span>
-                <span>{stats.totalJobs} total</span>
-              </div>
+              {/* Jobs row integrated into stat sublabels above */}
               {weeklyBreakdown && weeklyBreakdown.some((d) => d.work + d.weatherDelay > 0) && (
                 <div className="wk-chart">
                   <div className="wk-chart-title">Last 7 Days</div>
@@ -498,27 +497,25 @@ function DamageDashboard({
                 </div>
                 <div className="dash-ov-stats-grid dash-ov-stats-4col">
                   <div className="dash-ov-stat">
-                    <span className="dash-ov-stat-val">{stats.allTodayHours.toFixed(1)}</span>
                     <span className="dash-ov-stat-label">Today</span>
+                    <span className="dash-ov-stat-val dash-stat-highlight">{stats.allTodayHours.toFixed(1)}</span>
+                    <span className="dash-ov-stat-sub">{stats.allTodayJobs} job{stats.allTodayJobs !== 1 ? "s" : ""}</span>
                   </div>
                   <div className="dash-ov-stat">
-                    <span className="dash-ov-stat-val">{stats.allWeekHours.toFixed(1)}</span>
                     <span className="dash-ov-stat-label">This week</span>
+                    <span className="dash-ov-stat-val dash-stat-highlight">{stats.allWeekHours.toFixed(1)}</span>
+                    <span className="dash-ov-stat-sub">{stats.allWeekJobs} job{stats.allWeekJobs !== 1 ? "s" : ""}</span>
                   </div>
                   <div className="dash-ov-stat">
-                    <span className="dash-ov-stat-val">{stats.allMonthHours.toFixed(1)}</span>
                     <span className="dash-ov-stat-label">This month</span>
+                    <span className="dash-ov-stat-val dash-stat-highlight">{stats.allMonthHours.toFixed(1)}</span>
+                    <span className="dash-ov-stat-sub">{stats.allMonthJobs} job{stats.allMonthJobs !== 1 ? "s" : ""}</span>
                   </div>
                   <div className="dash-ov-stat">
-                    <span className="dash-ov-stat-val">{stats.allTotalHours.toFixed(1)}</span>
                     <span className="dash-ov-stat-label">All time</span>
+                    <span className="dash-ov-stat-val dash-stat-highlight">{stats.allTotalHours.toFixed(1)}</span>
+                    <span className="dash-ov-stat-sub">{stats.allTotalJobs} job{stats.allTotalJobs !== 1 ? "s" : ""}</span>
                   </div>
-                </div>
-                <div className="dash-ov-jobs-row">
-                  <span>{stats.allTodayJobs} today</span>
-                  <span>{stats.allWeekJobs} this week</span>
-                  <span>{stats.allMonthJobs} this month</span>
-                  <span>{stats.allTotalJobs} total</span>
                 </div>
               </div>
             )}
@@ -620,19 +617,51 @@ function DamageDashboard({
     return (
       <div className={`dash-page${standalone ? " dash-standalone" : ""}`}>
         {renderStandaloneHeader()}
-        <p className="empty-state">
-          No active project. Go to{" "}
-          <Link to="/setup" className="inline-link">Project Setup</Link>{" "}
-          to select a project.
-        </p>
+        <div className="dash-empty-state">
+          <div className="dash-empty-icon">&#9878;</div>
+          <h3 className="dash-empty-title">No Active Project</h3>
+          <p className="dash-empty-desc">Select or create a project to start tracking damage repairs.</p>
+          <div className="dash-empty-actions">
+            <Link to="/setup" className="dash-empty-btn dash-empty-btn-primary">Go to Project Setup</Link>
+          </div>
+        </div>
       </div>
     );
   }
 
+  const hasDamagesInProject = (project.turbines || []).some((t) =>
+    (t.blades || []).some((b) => (b.damages || []).length > 0)
+  );
+  const hasTurbinesInProject = (project.turbines || []).length > 0;
+
   if (!standalone && Object.keys(dashboardData).length === 0) {
     return (
       <div className="dash-page">
-        <p className="empty-state">No damage data yet. Submit jobs to see dashboard.</p>
+        <div className="dash-empty-state">
+          <div className="dash-empty-icon">&#9881;</div>
+          <h3 className="dash-empty-title">
+            {!hasTurbinesInProject
+              ? "No Turbines Configured"
+              : !hasDamagesInProject
+              ? "No Damages Configured"
+              : "No Work Logged Yet"}
+          </h3>
+          <p className="dash-empty-desc">
+            {!hasTurbinesInProject
+              ? "Add turbines and blades to your project, then define damages to track."
+              : !hasDamagesInProject
+              ? "Add damages to your blades so you can track repair progress."
+              : "Start logging repair jobs to see your damage dashboard populate."}
+          </p>
+          <div className="dash-empty-actions">
+            {(!hasTurbinesInProject || !hasDamagesInProject) && (
+              <Link to="/setup" className="dash-empty-btn dash-empty-btn-primary">Go to Project Setup</Link>
+            )}
+            {hasDamagesInProject && (
+              <Link to="/jobs" className="dash-empty-btn dash-empty-btn-secondary">Log First Job</Link>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
@@ -663,6 +692,13 @@ function DamageDashboard({
             turbineTotalDamages += Object.keys(damages).length;
             Object.values(damages).forEach((e) => { turbineTotalHours += e.totalHours; });
           });
+          // Count project-level damages for this turbine (includes unlogged)
+          const projTurbineDamages = turbineObj
+            ? (turbineObj.blades || []).reduce((s, b) => s + (b.damages || []).length, 0)
+            : turbineTotalDamages;
+          const projTurbineEstHours = turbineObj
+            ? (turbineObj.blades || []).reduce((s, b) => s + (b.damages || []).reduce((ds, d) => ds + (Number(d.estimatedHours) || 0), 0), 0)
+            : 0;
 
           const hasVisible = Object.entries(blades).some(([bladeName, damages]) =>
             Object.entries(damages).some(([dKey, entry]) => {
@@ -686,16 +722,12 @@ function DamageDashboard({
                   <span className="dash2-turbine-name">{turbineName}</span>
                 </div>
                 <div className="dash2-turbine-right">
-                  <div className="dash2-turbine-stats">
-                    <span>{Object.keys(blades).length} blade{Object.keys(blades).length !== 1 ? "s" : ""}</span>
-                    <span className="dash2-stat-sep">·</span>
-                    <span>{turbineTotalDamages} damage{turbineTotalDamages !== 1 ? "s" : ""}</span>
-                    {turbineTotalHours > 0 && (
-                      <>
-                        <span className="dash2-stat-sep">·</span>
-                        <span>{turbineTotalHours.toFixed(1)} hrs</span>
-                      </>
-                    )}
+                  <div className={`dash2-turbine-stats${isTurbineCollapsed ? " dash2-summary-highlight" : ""}`}>
+                    <span>{(turbineObj?.blades || Object.keys(blades)).length} blade{(turbineObj?.blades || Object.keys(blades)).length !== 1 ? "s" : ""}</span>
+                    <span className="dash2-stat-sep">&middot;</span>
+                    <span>{projTurbineDamages} damage{projTurbineDamages !== 1 ? "s" : ""}</span>
+                    <span className="dash2-stat-sep">&middot;</span>
+                    <span>{turbineTotalHours.toFixed(1)}{projTurbineEstHours > 0 ? ` / ${projTurbineEstHours}` : ""}h logged</span>
                   </div>
                   <span className="dash2-collapse-chevron">
                     <ChevronIcon up={!isTurbineCollapsed} />
@@ -709,6 +741,10 @@ function DamageDashboard({
                   const bladeKey = `${turbineName}::${bladeName}`;
                   const isBladeCollapsed = collapsedBlades.has(bladeKey);
                   const bladeHours = Object.values(damages).reduce((s, e) => s + e.totalHours, 0);
+                  const projBladeDamages = bladeObj ? (bladeObj.damages || []).length : Object.keys(damages).length;
+                  const projBladeEstHours = bladeObj
+                    ? (bladeObj.damages || []).reduce((s, d) => s + (Number(d.estimatedHours) || 0), 0)
+                    : 0;
 
                   const visibleDamages = Object.entries(damages).filter(([dKey, entry]) => {
                     if (dashStatusFilter === "All") return true;
@@ -730,14 +766,10 @@ function DamageDashboard({
                           <span className="dash2-blade-name">{bladeName}</span>
                         </div>
                         <div className="dash2-blade-right">
-                          <div className="dash2-blade-stats">
-                            <span>{visibleDamages.length} damage{visibleDamages.length !== 1 ? "s" : ""}</span>
-                            {bladeHours > 0 && (
-                              <>
-                                <span className="dash2-stat-sep">·</span>
-                                <span>{bladeHours.toFixed(1)} hrs</span>
-                              </>
-                            )}
+                          <div className={`dash2-blade-stats${isBladeCollapsed ? " dash2-summary-highlight" : ""}`}>
+                            <span>{projBladeDamages} damage{projBladeDamages !== 1 ? "s" : ""}</span>
+                            <span className="dash2-stat-sep">&middot;</span>
+                            <span>{bladeHours.toFixed(1)}{projBladeEstHours > 0 ? ` / ${projBladeEstHours}` : ""}h logged</span>
                           </div>
                           <span className="dash2-collapse-chevron">
                             <ChevronIcon up={!isBladeCollapsed} />
@@ -749,6 +781,11 @@ function DamageDashboard({
                         {visibleDamages.map(([dKey, entry]) => {
                           const { damage, jobs, totalHours, materials, operations, lastDate } = entry;
                           const opArray = Array.from(operations);
+                          // Find the most recent operation type from the latest job
+                          const lastJob = [...jobs].sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+                          const lastOperation = lastJob?.operations?.length > 0
+                            ? lastJob.operations[lastJob.operations.length - 1].type
+                            : null;
                           const currentStatus = getDamageStatusFromProject(turbineName, bladeName, damage.number);
                           const fullHighlightKey = `${turbineName}::${dKey}`;
                           const isHighlighted = highlightedDamageKey === fullHighlightKey;
@@ -808,9 +845,9 @@ function DamageDashboard({
                                     {turbineObj && bladeObj && damageObj && (
                                       <button
                                         type="button"
-                                        className="ddc-log-work-btn"
+                                        className="ddc-log-work-btn ddc-log-work-prominent"
                                         onClick={(e) => { e.stopPropagation(); handleLogWork(turbineObj, bladeObj, damageObj); }}
-                                      >▶ Log Work</button>
+                                      >+ Log Work</button>
                                     )}
                                     <span className={`ddc-expand-chevron${isExpanded ? " ddc-expand-chevron-up" : ""}`}>
                                       <ChevronIcon up={isExpanded} />
@@ -859,8 +896,11 @@ function DamageDashboard({
                                 </div>
 
                                 <div className="ddc-meta-row">
-                                  <span className="ddc-meta-item">📅 {lastDate}</span>
-                                  <span className="ddc-meta-item">🔧 {jobs.length} job{jobs.length !== 1 ? "s" : ""}</span>
+                                  <span className="ddc-meta-item">{lastDate}</span>
+                                  <span className="ddc-meta-item">{jobs.length} job{jobs.length !== 1 ? "s" : ""}</span>
+                                  {lastOperation && (
+                                    <span className="ddc-last-op-badge">{lastOperation}</span>
+                                  )}
                                 </div>
 
                                 {opArray.length > 0 && (
@@ -872,19 +912,21 @@ function DamageDashboard({
                                 )}
                               </div>
 
-                              {/* Status row — always visible, not part of clickable area */}
+                              {/* Status toggle — cycles through states on click */}
                               <div className="ddc-status-row">
-                                {["notstarted", "inprogress", "complete"].map((s) => (
-                                  <button
-                                    key={s}
-                                    type="button"
-                                    className={`ddc-status-btn ddc-status-${s}${currentStatus === s ? " ddc-status-active" : ""}`}
-                                    onClick={() => setDamageStatus(turbineName, bladeName, damage.number, s)}
-                                    aria-pressed={currentStatus === s}
-                                  >
-                                    {STATUS_META[s].icon} {STATUS_META[s].label}
-                                  </button>
-                                ))}
+                                <button
+                                  type="button"
+                                  className={`ddc-status-cycle ddc-status-${currentStatus}`}
+                                  title={`Status: ${STATUS_META[currentStatus].label} — Click to change`}
+                                  onClick={() => {
+                                    const order = ["notstarted", "inprogress", "complete"];
+                                    const idx = order.indexOf(currentStatus);
+                                    const next = order[(idx + 1) % order.length];
+                                    setDamageStatus(turbineName, bladeName, damage.number, next);
+                                  }}
+                                >
+                                  {STATUS_META[currentStatus].icon} {STATUS_META[currentStatus].label}
+                                </button>
                               </div>
 
                               {/* ── Expanded detail panel ── */}
