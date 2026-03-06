@@ -7,6 +7,13 @@ import JobLogPage from "./components/JobLogPage";
 import ProjectSetupPage from "./components/ProjectSetupPage";
 import DamageDashboard from "./components/DamageDashboard";
 import RepairDrawingPage from "./components/RepairDrawingPage";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { AuthProvider, useAuth } from "./components/auth/AuthContext";
+import LoginPage from "./components/auth/LoginPage";
+import { validateItems, validateProjects, validateJobs, migrateLocalStorage } from "./services/validation";
+
+// Run localStorage migrations on load
+migrateLocalStorage();
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -295,33 +302,43 @@ const CATEGORY_OPTIONS = [
   "Vortex Generator",
 ];
 
-function App() {
+function AppContent() {
   const [items, setItems] = useState(() => {
     try {
       const saved = localStorage.getItem("vetra-items");
       if (saved) {
         const parsed = JSON.parse(saved);
+        const { data: validated, errors } = validateItems(parsed);
+        if (errors.length > 0) console.warn("[Vetra] Item validation:", errors);
         // Merge: keep saved quantities/edits for matching IDs, add any new items from INITIAL_ITEMS
-        const savedMap = new Map(parsed.map((item) => [item.id, item]));
+        const savedMap = new Map(validated.map((item) => [item.id, item]));
         const merged = INITIAL_ITEMS.map((init) => {
           const existing = savedMap.get(init.id);
           return existing ? { ...init, ...existing } : init;
         });
         // Also keep any user-added items (IDs not in INITIAL_ITEMS)
         const initialIds = new Set(INITIAL_ITEMS.map((i) => i.id));
-        const userAdded = parsed.filter((item) => !initialIds.has(item.id));
+        const userAdded = validated.filter((item) => !initialIds.has(item.id));
         return [...merged, ...userAdded];
       }
       return INITIAL_ITEMS;
-    } catch {
+    } catch (e) {
+      console.error("[Vetra] Failed to load items:", e);
       return INITIAL_ITEMS;
     }
   });
   const [jobHistory, setJobHistory] = useState(() => {
     try {
       const saved = localStorage.getItem("vetra-jobs");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const { data: validated, errors } = validateJobs(parsed);
+        if (errors.length > 0) console.warn("[Vetra] Job validation:", errors);
+        return validated;
+      }
+      return [];
+    } catch (e) {
+      console.error("[Vetra] Failed to load jobs:", e);
       return [];
     }
   });
@@ -369,8 +386,11 @@ function App() {
           })),
         }));
       }
-      return parsed;
-    } catch {
+      const { data: validated, errors } = validateProjects(parsed);
+      if (errors.length > 0) console.warn("[Vetra] Project validation:", errors);
+      return validated;
+    } catch (e) {
+      console.error("[Vetra] Failed to load projects:", e);
       return [];
     }
   });
@@ -1031,15 +1051,25 @@ function App() {
     return "";
   };
 
+  const { isOfflineMode, user } = useAuth();
+
   return (
     <HashRouter>
       <ScrollToTop />
       <div className="app-root">
+        {isOfflineMode && (
+          <div className="offline-banner">Offline mode — data saved locally only</div>
+        )}
+        {user && !isOfflineMode && (
+          <div className="offline-banner" style={{ background: 'var(--swiss-green)', color: 'white' }}>
+            Signed in as {user.name || user.email}
+          </div>
+        )}
         <NavBar activeProject={activeProject} />
         <Routes>
           <Route
             path="/"
-            element={
+            element={<ErrorBoundary fallbackMessage="Inventory page encountered an error.">
               <InventoryPage
                 items={items}
                 filteredItems={filteredItems}
@@ -1081,11 +1111,11 @@ function App() {
                 setSortBy={setSortBy}
                 auditLog={auditLog}
               />
-            }
+            </ErrorBoundary>}
           />
           <Route
             path="/jobs"
-            element={
+            element={<ErrorBoundary fallbackMessage="Job Log page encountered an error.">
               <JobLogPage
                 items={items}
                 project={activeProject}
@@ -1120,11 +1150,11 @@ function App() {
                 onEditJob={editJob}
                 onDeleteJob={deleteJob}
               />
-            }
+            </ErrorBoundary>}
           />
           <Route
             path="/dashboard"
-            element={
+            element={<ErrorBoundary fallbackMessage="Dashboard encountered an error.">
               <DamageDashboard
                 project={activeProject}
                 projects={projects}
@@ -1135,20 +1165,20 @@ function App() {
                 onUpdateDamage={updateDamage}
                 standalone
               />
-            }
+            </ErrorBoundary>}
           />
           <Route
             path="/repair-drawing"
-            element={
+            element={<ErrorBoundary fallbackMessage="Repair Drawing page encountered an error.">
               <RepairDrawingPage
                 projects={projects}
                 activeProjectId={activeProjectId}
               />
-            }
+            </ErrorBoundary>}
           />
           <Route
             path="/setup"
-            element={
+            element={<ErrorBoundary fallbackMessage="Project Setup page encountered an error.">
               <ProjectSetupPage
                 projects={projects}
                 activeProjectId={activeProjectId}
@@ -1173,7 +1203,7 @@ function App() {
                 onAddMultipleBlades={addMultipleBlades}
                 jobHistory={jobHistory}
               />
-            }
+            </ErrorBoundary>}
           />
         </Routes>
         <footer className="app-footer">
@@ -1182,6 +1212,40 @@ function App() {
         <ScrollToTopButton />
       </div>
     </HashRouter>
+  );
+}
+
+function AuthGate() {
+  const { loading, isAuthenticated, isOfflineMode } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="auth-loading">
+        <div className="auth-loading-spinner" />
+      </div>
+    );
+  }
+
+  // If backend is down, run in offline/localStorage mode (existing behavior)
+  if (isOfflineMode) {
+    return <AppContent />;
+  }
+
+  // Backend available but not logged in — show login
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  return <AppContent />;
+}
+
+function App() {
+  return (
+    <ErrorBoundary fallbackMessage="The application hit an unexpected error. Your data is safe — try refreshing the page.">
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
