@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/static/css/main.854155a6.css",
-    "main.js": "/static/js/main.a3657212.js",
-    "static/js/453.84744d98.chunk.js": "/static/js/453.84744d98.chunk.js",
-    "index.html": "/index.html",
-    "main.854155a6.css.map": "/static/css/main.854155a6.css.map",
-    "main.a3657212.js.map": "/static/js/main.a3657212.js.map",
-    "453.84744d98.chunk.js.map": "/static/js/453.84744d98.chunk.js.map"
+    "main.css": "/vetra-inventory/static/css/main.854155a6.css",
+    "main.js": "/vetra-inventory/static/js/main.754f4752.js",
+    "static/js/453.84744d98.chunk.js": "/vetra-inventory/static/js/453.84744d98.chunk.js",
+    "index.html": "/vetra-inventory/index.html",
+    "main.854155a6.css.map": "/vetra-inventory/static/css/main.854155a6.css.map",
+    "main.754f4752.js.map": "/vetra-inventory/static/js/main.754f4752.js.map",
+    "453.84744d98.chunk.js.map": "/vetra-inventory/static/js/453.84744d98.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.854155a6.css",
-    "static/js/main.a3657212.js"
+    "static/js/main.754f4752.js"
   ]
 }
